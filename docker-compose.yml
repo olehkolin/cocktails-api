@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:17
+    container_name: cocktails-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cocktails}
+      POSTGRES_USER: ${POSTGRES_USER:-cocktails}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cocktails}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cocktails}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
