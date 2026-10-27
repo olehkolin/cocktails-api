@@ -10,14 +10,20 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "description", "is_alcoholic", "image_url", "created_at", "updated_at"]
         read_only_fields = ["created_at", "updated_at"]
 
+    def validate_name(self, value):
+        # "Mint" and "mint" should be treated as the same ingredient
+        if Ingredient.objects.filter(name__iexact=value).exclude(pk=getattr(self.instance, "pk", None)).exists():
+            raise serializers.ValidationError("Ingredient with this name already exists.")
+        return value
+
 
 class CocktailIngredientSerializer(serializers.ModelSerializer):
     # when creating a cocktail you send ingredient_id, in response you also get the name
     ingredient_id = serializers.PrimaryKeyRelatedField(
         source="ingredient", queryset=Ingredient.objects.all()
     )
-    name = serializers.ReadOnlyField(source="ingredient.name")
-    is_alcoholic = serializers.ReadOnlyField(source="ingredient.is_alcoholic")
+    name = serializers.CharField(source="ingredient.name", read_only=True)
+    is_alcoholic = serializers.BooleanField(source="ingredient.is_alcoholic", read_only=True)
 
     class Meta:
         model = CocktailIngredient
@@ -26,7 +32,7 @@ class CocktailIngredientSerializer(serializers.ModelSerializer):
 
 class CocktailSerializer(serializers.ModelSerializer):
     ingredients = CocktailIngredientSerializer(source="cocktail_ingredients", many=True)
-    author = serializers.ReadOnlyField(source="author.username")
+    author = serializers.CharField(source="author.username", read_only=True)
     is_alcoholic = serializers.SerializerMethodField()
     avg_rating = serializers.SerializerMethodField()
 
@@ -46,13 +52,13 @@ class CocktailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["created_at", "updated_at"]
 
-    def get_is_alcoholic(self, obj):
+    def get_is_alcoholic(self, obj) -> bool:
         for item in obj.cocktail_ingredients.all():
             if item.ingredient.is_alcoholic:
                 return True
         return False
 
-    def get_avg_rating(self, obj):
+    def get_avg_rating(self, obj) -> float | None:
         # avg_rating comes from annotate() in the view
         avg = getattr(obj, "avg_rating", None)
         if avg is None:
@@ -97,7 +103,7 @@ class CocktailSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source="user.username")
+    user = serializers.CharField(source="user.username", read_only=True)
 
     class Meta:
         model = Review
