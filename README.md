@@ -120,9 +120,3 @@ POST /api/cocktails/1/reviews/
 Składniki: `?name=`, `?is_alcoholic=true/false`, `?search=`, `?ordering=`
 
 Przy złych wartościach filtrów (np. `?alcoholic=abc`) API zwraca `400`.
-
-## Co można by jeszcze dodać
-
-- upload zdjęć składników zamiast samego linku
-- edycja i usuwanie recenzji
-- Dockerfile dla całej aplikacji, nie tylko dla bazy
