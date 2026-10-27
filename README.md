@@ -2,6 +2,16 @@
 
 REST API do zarządzania koktajlami i składnikami. Zrobione w Django + Django REST Framework, baza PostgreSQL.
 
+Co jest zrobione:
+- CRUD koktajli i składników
+- rejestracja i logowanie (JWT), role `user` i `admin`
+- koktajl może edytować / usuwać tylko autor albo admin
+- oceny (1-5) z recenzją
+- paginacja, filtrowanie, sortowanie i wyszukiwanie
+- walidacja danych (też w filtrach)
+- dokumentacja Swagger
+- testy (42 testy)
+
 ## Jak uruchomić
 
 Potrzebny jest Python 3.12+ i Docker.
@@ -20,15 +30,32 @@ python manage.py seed             # przykładowe koktajle i składniki
 python manage.py runserver
 ```
 
-Potem API jest pod http://127.0.0.1:8000/api/, a panel admina pod http://127.0.0.1:8000/admin/.
+Potem:
+- Swagger: http://127.0.0.1:8000/api/docs/
+- API: http://127.0.0.1:8000/api/
+- panel admina: http://127.0.0.1:8000/admin/
+
+Żeby w Swaggerze testować endpointy wymagające logowania: zaloguj się przez `/api/auth/login/`, skopiuj `access` token, kliknij **Authorize** i wklej go.
+
+## Testy
+
+```bash
+python manage.py test
+```
+
+Testy potrzebują działającej bazy z Dockera (Django samo tworzy i usuwa testową bazę).
 
 ## Baza danych
+
+![Schemat bazy danych](docs/db-schema.png)
 
 - `Ingredient` - składnik (nazwa, opis, czy alkoholowy, link do zdjęcia)
 - `Cocktail` - koktajl (nazwa, kategoria, instrukcja, autor)
 - `CocktailIngredient` - tabela pośrednia między koktajlem a składnikiem, trzyma ilość i jednostkę
 - `Review` - ocena 1-5 i komentarz, jeden użytkownik może ocenić koktajl tylko raz
 - `User` - własny model użytkownika z polem `role` (`user` albo `admin`)
+
+Składnika, który jest użyty w jakimś koktajlu, nie da się usunąć (API zwraca `409`). Jak usunie się użytkownika, jego koktajle zostają, tylko bez autora.
 
 ## Logowanie (JWT)
 
@@ -40,6 +67,8 @@ Potem API jest pod http://127.0.0.1:8000/api/, a panel admina pod http://127.0.0
 | GET | `/api/auth/me/` | dane zalogowanego użytkownika |
 
 Token trzeba wysyłać w nagłówku: `Authorization: Bearer <access_token>`
+
+Nowy użytkownik zawsze ma rolę `user`. Admina można zrobić przez `createsuperuser` albo zmienić rolę w panelu admina.
 
 ## Koktajle i składniki
 
@@ -55,8 +84,6 @@ Token trzeba wysyłać w nagłówku: `Authorization: Bearer <access_token>`
 | POST | `/api/ingredients/` | zalogowany |
 | PUT / PATCH / DELETE | `/api/ingredients/{id}/` | admin |
 
-Składnika, który jest użyty w jakimś koktajlu, nie da się usunąć (zwraca `409`).
-
 Przykład dodania koktajlu:
 
 ```json
@@ -71,6 +98,8 @@ POST /api/cocktails/
   ]
 }
 ```
+
+Przy PATCH można nie wysyłać `ingredients`, wtedy składniki zostają takie same.
 
 Przykład oceny:
 
@@ -92,7 +121,8 @@ Składniki: `?name=`, `?is_alcoholic=true/false`, `?search=`, `?ordering=`
 
 Przy złych wartościach filtrów (np. `?alcoholic=abc`) API zwraca `400`.
 
-## TODO
+## Co można by jeszcze dodać
 
-- dokumentacja Swagger
-- testy
+- upload zdjęć składników zamiast samego linku
+- edycja i usuwanie recenzji
+- Dockerfile dla całej aplikacji, nie tylko dla bazy
